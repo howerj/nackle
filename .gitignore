@@ -1,0 +1,16 @@
+*.a
+*.dll
+*.exe
+*.o
+*.pri
+*.pub
+*.so
+*~
+brain
+decrypt
+encrypt
+keypair
+random
+sign
+signpair
+verify
