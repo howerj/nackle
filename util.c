@@ -17,6 +17,8 @@
 #include "util.h"
 #include "tweetnacl.h"
 
+#define UNUSED(X) ((void)(X))
+
 #if defined(__unix__)
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -215,24 +217,15 @@ int key_read(const char *filename, unsigned char *key, const size_t key_size) {
 	return r;
 }
 
+/* TODO: This should be replace by the OSes secure version */
+void purge(unsigned char *bytes, const size_t length) {
+	assert(bytes);
+	memset(bytes, 0, length);
+}
+
 int key_output(const char *filename, unsigned char *key, const size_t key_size) {
 	assert(filename);
 	assert(key);
-	if (!strcmp(filename, "-")) {
-		/* TODO: Should this be implemented? Or should
-		 * there be a utility for converting keys and
-		 * messages to their ASCII equivalents? */
-		return msg(-2, "Unimplemented");
-#if 0
-		char hx[(256 * 2) + 1];
-		for (size_t i = 0; i < key_size; i += 256) {
-			bytes_to_hex();
-			fwrite();
-		}
-		if (fputc('\n', stdout) != '\n')
-			die("Could not output the key to <stdout>");
-#endif
-	}
 	FILE *out = create_file(filename);
 	int r = 0;
 	if (!out)
@@ -252,26 +245,45 @@ int key_output(const char *filename, unsigned char *key, const size_t key_size) 
  * - Error codes could be returned instead of dying */
 content_s slurp(const char *filename) {
 	assert(filename);
-	content_s c = { 0, NULL, };
+	content_s c = { 0, NULL, 0, };
 	FILE *f = fopen(filename, "rb");
-	if (!f) 
-		die("Could not read <%s>", filename);
-	if (fseek(f, 0, SEEK_END) < 0)
-		die("Failed to seek");
+	if (!f) {
+		msg(-1, "Could not read <%s>", filename);
+		goto fail;
+	}
+	if (fseek(f, 0, SEEK_END) < 0) {
+		msg(-1, "Failed to seek"); /* NB. Might be reading from stdin here, could do something about that... */
+		goto fail;
+	}
 	const long size = ftell(f);
-	if (size < 0)
-		die("Could not read <%s>", filename);
-	c.size = (size_t)size;
-	if (fseek(f, 0, SEEK_SET) < 0)
-		die("Failed to seek");
+	if (size < 0) {
+		msg(-1, "Could not read <%s>", filename);
+		goto fail;
+	}
+	c.size = size;
+	if (fseek(f, 0, SEEK_SET) < 0) {
+		msg(-1, "Failed to seek");
+		goto fail;
+	}
 	c.bytes = malloc(c.size);
-	if (c.bytes == NULL) 
-		die("Malloc failed!");
-	if (fread(c.bytes, c.size, 1, f) != c.size)
-		die("Read size mismatch");
-	if (fclose(f) < 0)
-		die("Closing failed");
+	if (c.bytes == NULL) {
+		msg(-1, "Malloc failed of %ld bytes", (long)c.size);
+		goto fail;
+	}
+	if (fread(c.bytes, 1, c.size, f) != c.size) {
+		msg(-1, "Read size mismatch");
+		goto fail;
+	}
+	if (fclose(f) < 0) {
+		msg(-1, "Closing failed");
+		goto fail;
+	}
 	return c;
+fail:
+	if (f)
+		(void)fclose(f);
+	free(c.bytes);
+	return (content_s){ 0, NULL, -1, };
 }
 
 int init(void) {

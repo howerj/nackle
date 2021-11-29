@@ -9,6 +9,7 @@
 brain
 decrypt
 encrypt
+hash
 keypair
 random
 sign

@@ -3,14 +3,10 @@
 
 int main(int argc, char **argv) {
 	init();
-
 	if (argc != 4)
 		return msg(1, "Usage: %s sign.pub message.signed message.txt", argv[0]);
-
-	/* This will also erroneously fail if the file "-" exists */
 	if (file_exists(argv[3])) 
 		return msg(1, "File <%s> exists", argv[3]);
-
 #if 0
 	unsigned char public_key[crypto_sign_PUBLICKEYBYTES];
 	read_key(argv[1], public_key, crypto_sign_PUBLICKEYBYTES);

@@ -6,7 +6,6 @@ int main(int argc, char **argv) {
 	if (argc != 4)
 		return msg(1, "Usage: %s sign.pri message.txt message.signed", argv[0]);
 #if 0
-	/* This will also erroneously fail if the file "-" exists */
 	if (file_exists(argv[3])) 
 		return msg(1, "File <%s> exists", argv[3]);
 

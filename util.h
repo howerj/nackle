@@ -7,6 +7,7 @@
 typedef struct {
 	size_t size;
 	unsigned char *bytes;
+	int error;
 } content_s;
 
 int init(void);
@@ -19,6 +20,7 @@ FILE *create_file(const char *filename);
 int key_read(const char *filename, unsigned char *key, size_t key_size);
 int key_output(const char *filename, unsigned char *key, size_t key_size);
 content_s slurp(const char *filename);
+void purge(unsigned char *bytes, size_t length);
 const char *get_project_info(void);
 
 #endif

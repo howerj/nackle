@@ -1,5 +1,5 @@
 CFLAGS=-std=c99 -D_POSIX_C_SOURCE=1 -Wall -Wextra -pedantic -O2 -DCRYPTO_VERSION="\"0.0.1\""
-TARGETS=random decrypt encrypt keypair sign signpair verify brain hash
+TARGETS=random decrypt encrypt keypair sign signpair verify hash
 EXE=.exe
 .PHONY: all test run clean install
 
@@ -22,8 +22,6 @@ sign: sign.c tweetnacl.o util.o
 signpair: signpair.c tweetnacl.o util.o
 
 verify: verify.c tweetnacl.o util.o
-
-brain: brain.c tweetnacl.o util.o
 
 hash: hash.c tweetnacl.o util.o
 

@@ -1,5 +1,7 @@
 #include "util.h"
 #include "tweetnacl.h"
+#include <stdlib.h>
+#include <string.h>
 
 int main(int argc, char **argv) {
 	init();
@@ -10,21 +12,24 @@ int main(int argc, char **argv) {
 	/* This will also erroneously fail if the file "-" exists */
 	if (file_exists(argv[4])) 
 		return msg(1, "File <%s> exists", argv[4]);
-#if 0
 	/* Alice has sent to Bob, not surprisingly */
 	unsigned char a_public_key[crypto_box_PUBLICKEYBYTES] = { 0, };
 	unsigned char b_secret_key[crypto_box_SECRETKEYBYTES] = { 0, };
 
-	read_key(argv[1], a_public_key, crypto_box_PUBLICKEYBYTES);
-	read_key(argv[2], b_secret_key, crypto_box_SECRETKEYBYTES);
+	if (key_read(argv[1], a_public_key, crypto_box_PUBLICKEYBYTES) < 0)
+		return 1;
+	if (key_read(argv[2], b_secret_key, crypto_box_SECRETKEYBYTES) < 0)
+		return 1;
 
-	unsigned char nonce[crypto_box_NONCEBYTES];
+	unsigned char nonce[crypto_box_NONCEBYTES] = { 0, };
 
 	/* Input */
-	Content c = read_file(argv[3]);
+	content_s c = slurp(argv[3]);
+	if (c.error)
+		return 1;
 	memcpy(nonce, c.bytes, crypto_box_NONCEBYTES);
 
-	long esize = c.size - crypto_box_NONCEBYTES + crypto_box_BOXZEROBYTES;
+	const long esize = c.size - crypto_box_NONCEBYTES + crypto_box_BOXZEROBYTES;
 	unsigned char *encrypted = malloc(esize);
 	if (!encrypted) 
 		return msg(1, "Malloc failed!");
@@ -40,17 +45,14 @@ int main(int argc, char **argv) {
 		return msg(1, "Calloc failed!");
 
 	/* Decrypt */ 
-	crypto_box_open(message, encrypted, esize, nonce, a_public_key, b_secret_key);
+	if (crypto_box_open(message, encrypted, esize, nonce, a_public_key, b_secret_key) < 0)
+		return msg(1, "Verification failed");
 	free(encrypted);
 
-	if (strcmp(argv[4], "-") != 0) {
-		FILE *out = create_file(argv[4]);
-		fwrite(message + crypto_box_ZEROBYTES, esize - crypto_box_ZEROBYTES, 1, out);
-		fclose(out);
-	} else {
-		fwrite(message + crypto_box_ZEROBYTES, esize - crypto_box_ZEROBYTES, 1, stdout);
-	}
+	FILE *out = create_file(argv[4]);
+	fwrite(message + crypto_box_ZEROBYTES, 1, esize - crypto_box_ZEROBYTES, out);
+	if (fclose(out) < 0)
+		return msg(1, "Closing failed");
 	free(message);
-#endif
 	return 0;
 }
